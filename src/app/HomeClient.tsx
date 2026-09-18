@@ -6,24 +6,26 @@ import { useRouter } from "next/navigation";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { Book, CartLine, Genre } from "@/types";
 import { useCurrency } from "@/hooks/useCurrency";
+import { useAppContext } from "@/context/AppContext";
 import Header from "@/components/Header";
 import Hero from "../components/Hero";
 import GenreFilter from "@/components/GenreFilter";
 import BookGrid from "@/components/BookGrid";
 import BookList from "@/components/BookList";
 import ViewTabs from "@/components/ViewTabs";
-import DetailModal from "@/components/DetailModal";
 import CartDrawer from "@/components/CartDrawer";
 import NylonPayModal from "@/components/NylonPayModal";
 
 interface HomeClientProps {
   initialBooks: Book[];
-  initialBookId?: string;
 }
 
-export default function HomeClient({ initialBooks, initialBookId }: HomeClientProps) {
+export default function HomeClient({ initialBooks }: HomeClientProps) {
   const currency = useCurrency();
   const router = useRouter();
+  
+  const { cart, setCart, wishlist, toggleWishlist, changeQty, toggleChecked, cartCount } = useAppContext();
+
 
   // Filter state
   const [genre, setGenre] = useState<"All" | Genre>("All");
@@ -37,17 +39,8 @@ export default function HomeClient({ initialBooks, initialBookId }: HomeClientPr
   // Books state — seeded from server so they appear instantly
   const [books] = useState<Book[]>(initialBooks);
 
-  // Cart & wishlist
-  const [cart, setCart] = useState<CartLine[]>([]);
-  const [wishlist, setWishlist] = useState<(string | number)[]>([]);
+  // Cart Drawer
   const [cartOpen, setCartOpen] = useState(false);
-
-  // Detail modal — open directly if a ?book= param was passed
-  const [selected, setSelected] = useState<Book | null>(
-    initialBookId
-      ? (initialBooks.find((b) => String(b.id) === initialBookId) ?? null)
-      : null
-  );
 
   // Nylon Pay
   const [nylonOpen, setNylonOpen] = useState(false);
@@ -82,60 +75,17 @@ export default function HomeClient({ initialBooks, initialBookId }: HomeClientPr
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
 
-  const cartCount = cart.reduce((sum, c) => sum + c.qty, 0);
-
   const [view, setView] = useState<"grid" | "list">("grid");
 
   const selectedTotal = useMemo(() => {
     return cart
       .filter((c) => c.checked)
       .reduce((sum, c) => {
-        const book = books.find((b) => b.id === c.id);
-        return sum + (book?.price ?? 0) * c.qty;
+        return sum + (c.book?.price ?? 0) * c.qty;
       }, 0);
   }, [cart]);
 
   // Handlers
-  const openDetail = useCallback((book: Book) => {
-    setSelected(book);
-  }, []);
-
-  const closeDetail = useCallback(() => {
-    setSelected(null);
-  }, []);
-
-  const addToCart = useCallback((book: Book, qty: number) => {
-    setCart((prev) => {
-      const existing = prev.find((c) => c.id === book.id);
-      if (existing) {
-        return prev.map((c) =>
-          c.id === book.id ? { ...c, qty: c.qty + qty, checked: true } : c
-        );
-      }
-      return [...prev, { id: book.id, qty, checked: true }];
-    });
-  }, []);
-
-  const changeQty = useCallback((id: string | number, delta: number) => {
-    setCart((prev) =>
-      prev
-        .map((c) => (c.id === id ? { ...c, qty: c.qty + delta } : c))
-        .filter((c) => c.qty > 0)
-    );
-  }, []);
-
-  const toggleChecked = useCallback((id: string | number) => {
-    setCart((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, checked: !c.checked } : c))
-    );
-  }, []);
-
-  const toggleWishlist = useCallback((id: string | number) => {
-    setWishlist((prev) =>
-      prev.includes(id) ? prev.filter((w) => w !== id) : [...prev, id]
-    );
-  }, []);
-
   function handleCheckout() {
     setCartOpen(false);
     setNylonOpen(true);
@@ -146,11 +96,6 @@ export default function HomeClient({ initialBooks, initialBookId }: HomeClientPr
     setCart([]);
   }
 
-  // Buy single book immediately: prefill cart and open payment modal
-  const buyNow = useCallback((book: Book, qty = 1) => {
-    setCart([{ id: book.id, qty, checked: true }]);
-    setNylonOpen(true);
-  }, []);
 
   function handleSearchToggle() {
     setSearchOpen((s) => {
@@ -185,7 +130,6 @@ export default function HomeClient({ initialBooks, initialBookId }: HomeClientPr
                 books={paginatedBooks}
                 wishlist={wishlist}
                 onToggleWishlist={toggleWishlist}
-                onSelect={openDetail}
                 currency={currency}
               />
             ) : (
@@ -193,7 +137,6 @@ export default function HomeClient({ initialBooks, initialBookId }: HomeClientPr
                 books={paginatedBooks}
                 wishlist={wishlist}
                 onToggleWishlist={toggleWishlist}
-                onSelect={openDetail}
                 currency={currency}
               />
             )}
@@ -260,43 +203,10 @@ export default function HomeClient({ initialBooks, initialBookId }: HomeClientPr
             </div>
           </div>
         </div>
-      </footer>
-
-      {/* Detail Modal */}
-      {selected && (
-        <DetailModal
-          book={selected}
-          wishlist={wishlist}
-          onToggleWishlist={toggleWishlist}
-          onAddToCart={addToCart}
-          onBuyNow={buyNow}
-          onClose={closeDetail}
-          currency={currency}
-          recommendedBooks={books
-            .filter((book) => book.id !== selected.id)
-            .sort((a, b) => {
-              const aMatch = (Array.isArray(a.genre) ? a.genre : [a.genre]).filter((g) =>
-                (Array.isArray(selected.genre) ? selected.genre : [selected.genre]).includes(g as Genre)
-              ).length;
-              const bMatch = (Array.isArray(b.genre) ? b.genre : [b.genre]).filter((g) =>
-                (Array.isArray(selected.genre) ? selected.genre : [selected.genre]).includes(g as Genre)
-              ).length;
-
-              if (aMatch !== bMatch) return bMatch - aMatch;
-              if (a.author === selected.author && b.author !== selected.author) return -1;
-              if (a.author !== selected.author && b.author === selected.author) return 1;
-              return a.title.localeCompare(b.title);
-            })
-            .slice(0, 6)}
-          onSelectRecommended={setSelected}
-        />
-      )}
-
-      {/* Cart Drawer */}
+      </footer>      {/* Cart Drawer */}
       <CartDrawer
         open={cartOpen}
         cart={cart}
-        books={books}
         onClose={() => setCartOpen(false)}
         onQtyChange={changeQty}
         onToggleChecked={toggleChecked}
@@ -310,7 +220,6 @@ export default function HomeClient({ initialBooks, initialBookId }: HomeClientPr
           total={selectedTotal}
           currency={currency}
           cart={cart.filter(c => c.checked)}
-          books={books}
           onClose={() => setNylonOpen(false)}
           onSuccess={handlePaySuccess}
         />

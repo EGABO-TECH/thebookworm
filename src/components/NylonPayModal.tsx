@@ -2,15 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { X, Check, Smartphone } from "lucide-react";
-import { CurrencyConfig, Book } from "@/types";
+import { CurrencyConfig, Book, CartLine } from "@/types";
 import { formatPrice } from "@/lib/currency";
 import { normalizeWhatsAppLink } from "@/lib/whatsapp";
 
 interface NylonPayModalProps {
   total: number;
   currency: CurrencyConfig;
-  cart: { id: string | number; qty: number; checked: boolean }[];
-  books: Book[];
+  cart: CartLine[];
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -21,7 +20,6 @@ export default function NylonPayModal({
   total,
   currency,
   cart,
-  books,
   onClose,
   onSuccess,
 }: NylonPayModalProps) {
@@ -106,7 +104,7 @@ export default function NylonPayModal({
             // Fetch download links
             const fetchedUrls = [];
             for (const item of cart) {
-              const book = books.find(b => b.id === item.id);
+              const book = item.book;
               if (!book) continue;
               try {
                 const dRes = await fetch("/api/download", {

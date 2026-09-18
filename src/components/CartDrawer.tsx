@@ -9,7 +9,6 @@ import { formatPrice } from "@/lib/currency";
 interface CartDrawerProps {
   open: boolean;
   cart: CartLine[];
-  books: Book[];
   onClose: () => void;
   onQtyChange: (id: string | number, delta: number) => void;
   onToggleChecked: (id: string | number) => void;
@@ -20,7 +19,6 @@ interface CartDrawerProps {
 export default function CartDrawer({
   open,
   cart,
-  books,
   onClose,
   onQtyChange,
   onToggleChecked,
@@ -45,7 +43,7 @@ export default function CartDrawer({
   }, [open]);
 
   const cartBooks = cart.map((c) => ({
-    ...books.find((b) => b.id === c.id)!,
+    ...c.book,
     qty: c.qty,
     checked: c.checked,
   }));

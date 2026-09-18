@@ -36,6 +36,7 @@ export interface CartLine {
   id: string | number; // Book.id
   qty: number;
   checked: boolean;
+  book: Book;
 }
 
 export interface CurrencyConfig {

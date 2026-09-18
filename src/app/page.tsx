@@ -80,9 +80,6 @@ export async function generateMetadata(
 
 export default async function HomePage({ searchParams }: Props) {
   const resolvedSearchParams = await searchParams;
-  const initialBookId = typeof resolvedSearchParams?.book === "string"
-    ? resolvedSearchParams.book
-    : undefined;
 
   let initialBooks: Book[] = [];
   try {
@@ -91,6 +88,6 @@ export default async function HomePage({ searchParams }: Props) {
     console.error("Failed to fetch books for SSR:", e);
   }
 
-  return <HomeClient initialBooks={initialBooks} initialBookId={initialBookId} />;
+  return <HomeClient initialBooks={initialBooks} />;
 }
 

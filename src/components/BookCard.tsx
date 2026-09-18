@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { Book, CurrencyConfig } from "@/types";
 import Cover from "./Cover";
 import Rating from "./Rating";
@@ -10,7 +11,6 @@ interface BookCardProps {
   book: Book;
   wishlisted: boolean;
   onToggleWishlist: (id: string | number) => void;
-  onSelect: (book: Book) => void;
   currency: CurrencyConfig;
 }
 
@@ -18,22 +18,14 @@ export default function BookCard({
   book,
   wishlisted,
   onToggleWishlist,
-  onSelect,
   currency,
 }: BookCardProps) {
   return (
-    <article
+    <Link
+      href={`/book/${book.id}`}
       className="book-card"
-      onClick={() => onSelect(book)}
-      role="button"
-      tabIndex={0}
       aria-label={`View ${book.title} by ${book.author}`}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onSelect(book);
-        }
-      }}
+      style={{ textDecoration: 'none', color: 'inherit' }}
     >
       <Cover
         book={book}
@@ -54,6 +46,6 @@ export default function BookCard({
           {formatPrice(book.price, currency)}
         </div>
       </div>
-    </article>
+    </Link>
   );
 }

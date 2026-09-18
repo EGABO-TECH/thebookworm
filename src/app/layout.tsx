@@ -76,6 +76,8 @@ export const viewport: Viewport = {
   themeColor: "#E8B930",
 };
 
+import { AppProvider } from "@/context/AppContext";
+
 export default function RootLayout({
   children,
 }: {
@@ -99,12 +101,14 @@ export default function RootLayout({
             `,
           }}
         />
-        <PwaRegister />
-        <Suspense fallback={null}>
-          <ScrollToTop />
-        </Suspense>
-        <WhatsAppFab />
-        {children}
+        <AppProvider>
+          <PwaRegister />
+          <Suspense fallback={null}>
+            <ScrollToTop />
+          </Suspense>
+          <WhatsAppFab />
+          {children}
+        </AppProvider>
       </body>
     </html>
   );

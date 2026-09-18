@@ -8,7 +8,6 @@ interface BookGridProps {
   books: Book[];
   wishlist: (string | number)[];
   onToggleWishlist: (id: string | number) => void;
-  onSelect: (book: Book) => void;
   currency: CurrencyConfig;
 }
 
@@ -16,7 +15,6 @@ export default function BookGrid({
   books,
   wishlist,
   onToggleWishlist,
-  onSelect,
   currency,
 }: BookGridProps) {
   if (books.length === 0) {
@@ -38,7 +36,6 @@ export default function BookGrid({
           book={book}
           wishlisted={wishlist.includes(book.id)}
           onToggleWishlist={onToggleWishlist}
-          onSelect={onSelect}
           currency={currency}
         />
       ))}
